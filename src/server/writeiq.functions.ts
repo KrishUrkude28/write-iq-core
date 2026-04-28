@@ -157,84 +157,251 @@ function extractToolArgs(json: any): any {
   return null;
 }
 
-export const analyzeWriting = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => AnalyzeInput.parse(input))
-  .handler(async ({ data }) => {
-    const developer = buildDeveloperPrompt({
-      mode: data.mode,
-      tone: data.voice?.tone ?? "",
-      vocab: data.voice?.vocab ?? "",
-      traits: data.voice?.traits ?? "",
-      context: data.context ?? "",
-    });
+// Strict response schema for runtime validation
+const ResponseSchema = z.object({
+  score: z.number().min(0).max(100),
+  suggestions: z.array(
+    z.object({
+      title: z.string().min(1),
+      description: z.string().min(1),
+      original: z.string(),
+      replacement: z.string(),
+    }),
+  ),
+  socratic_questions: z.array(z.string()),
+  accessibility: z.object({
+    readability_score: z.string(),
+    issues: z.array(z.string()),
+  }),
+});
 
-    const userPrompt = `Analyze the following text:\n\n"""\n${data.text}\n"""`;
+const RECOVERY_PROMPT = `Your previous response was invalid.
 
-    const tool = {
-      type: "function",
-      function: {
-        name: "writeiq_result",
-        description: "Return WriteIQ analysis JSON.",
-        parameters: {
-          type: "object",
-          properties: {
-            score: { type: "number" },
-            suggestions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  description: { type: "string" },
-                  original: { type: "string" },
-                  replacement: { type: "string" },
-                },
-                required: ["title", "description", "original", "replacement"],
-                additionalProperties: false,
-              },
-            },
-            socratic_questions: { type: "array", items: { type: "string" } },
-            accessibility: {
+Fix the output:
+- Return ONLY valid JSON matching the required schema exactly
+- Do NOT change content meaning
+- Ensure all required fields exist (score, suggestions, socratic_questions, accessibility)
+- Ensure no trailing commas and all strings are properly escaped
+
+Reformat the response properly using the writeiq_result tool.`;
+
+// --- Edge-case detection on the input itself ---
+function detectEdgeCases(text: string): {
+  empty: boolean;
+  tooShort: boolean;
+  repetitive: boolean;
+  overlyComplex: boolean;
+  topRepeatedToken?: string;
+  longestSentenceWords?: number;
+} {
+  const trimmed = text.trim();
+  if (!trimmed) return { empty: true, tooShort: true, repetitive: false, overlyComplex: false };
+
+  const tokens = trimmed.toLowerCase().match(/\b[\p{L}\p{N}']+\b/gu) ?? [];
+  const tooShort = tokens.length < 5;
+
+  // Repetition: any non-stopword token appearing > 25% of the time, or unique-ratio < 0.4
+  const stop = new Set(["the","a","an","of","to","in","is","it","and","or","for","on","with","that","this","be","are","as","at","by","i","you","we","they","but","not","so"]);
+  const counts = new Map<string, number>();
+  for (const t of tokens) if (!stop.has(t)) counts.set(t, (counts.get(t) ?? 0) + 1);
+  const total = tokens.length || 1;
+  let topToken: string | undefined;
+  let topCount = 0;
+  for (const [k, v] of counts) if (v > topCount) { topCount = v; topToken = k; }
+  const uniqueRatio = new Set(tokens).size / total;
+  const repetitive = !tooShort && (topCount / total > 0.25 || uniqueRatio < 0.4);
+
+  // Complexity: longest sentence > 35 words, or avg > 25
+  const sentences = trimmed.split(/[.!?]+\s+/).filter(Boolean);
+  const lengths = sentences.map((s) => (s.match(/\b[\p{L}\p{N}']+\b/gu) ?? []).length);
+  const longest = lengths.length ? Math.max(...lengths) : 0;
+  const avg = lengths.length ? lengths.reduce((a, b) => a + b, 0) / lengths.length : 0;
+  const overlyComplex = longest > 35 || avg > 25;
+
+  return {
+    empty: false,
+    tooShort,
+    repetitive,
+    overlyComplex,
+    topRepeatedToken: repetitive ? topToken : undefined,
+    longestSentenceWords: overlyComplex ? longest : undefined,
+  };
+}
+
+function buildEdgeCaseFallback(
+  text: string,
+  mode: "coach" | "socratic",
+  edge: ReturnType<typeof detectEdgeCases>,
+): z.infer<typeof ResponseSchema> | null {
+  if (edge.empty) {
+    return {
+      score: 0,
+      suggestions: [],
+      socratic_questions:
+        mode === "socratic"
+          ? [
+              "What is the single most important idea you want the reader to take away?",
+              "Who is the audience, and what do they already know?",
+              "What outcome do you want from this writing?",
+            ]
+          : [],
+      accessibility: { readability_score: "n/a", issues: ["Input is empty."] },
+    };
+  }
+
+  if (mode === "coach" && edge.repetitive && edge.topRepeatedToken) {
+    // Build a concrete conciseness suggestion targeting the repeated token
+    const original = text.trim().slice(0, 240);
+    const replacement = original.replace(
+      new RegExp(`\\b${edge.topRepeatedToken}\\b`, "gi"),
+      (m, i) => (i === 0 ? m : "[…]"),
+    );
+    return {
+      score: 35,
+      suggestions: [
+        {
+          title: `Reduce repetition of "${edge.topRepeatedToken}"`,
+          description: `The word "${edge.topRepeatedToken}" appears repeatedly. Vary phrasing or condense.`,
+          original,
+          replacement,
+        },
+      ],
+      socratic_questions: [],
+      accessibility: {
+        readability_score: "low (repetitive)",
+        issues: [`Repeated token "${edge.topRepeatedToken}" dominates the text.`],
+      },
+    };
+  }
+  return null;
+}
+
+async function runAnalysis(
+  data: z.infer<typeof AnalyzeInput>,
+  recovery = false,
+): Promise<unknown> {
+  const developer = buildDeveloperPrompt({
+    mode: data.mode,
+    tone: data.voice?.tone ?? "",
+    vocab: data.voice?.vocab ?? "",
+    traits: data.voice?.traits ?? "",
+    context: data.context ?? "",
+  });
+
+  const userPrompt = `Analyze the following text:\n\n"""\n${data.text}\n"""`;
+
+  const tool = {
+    type: "function",
+    function: {
+      name: "writeiq_result",
+      description: "Return WriteIQ analysis JSON.",
+      parameters: {
+        type: "object",
+        properties: {
+          score: { type: "number" },
+          suggestions: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                readability_score: { type: "string" },
-                issues: { type: "array", items: { type: "string" } },
+                title: { type: "string" },
+                description: { type: "string" },
+                original: { type: "string" },
+                replacement: { type: "string" },
               },
-              required: ["readability_score", "issues"],
+              required: ["title", "description", "original", "replacement"],
               additionalProperties: false,
             },
           },
-          required: ["score", "suggestions", "socratic_questions", "accessibility"],
-          additionalProperties: false,
+          socratic_questions: { type: "array", items: { type: "string" } },
+          accessibility: {
+            type: "object",
+            properties: {
+              readability_score: { type: "string" },
+              issues: { type: "array", items: { type: "string" } },
+            },
+            required: ["readability_score", "issues"],
+            additionalProperties: false,
+          },
         },
+        required: ["score", "suggestions", "socratic_questions", "accessibility"],
+        additionalProperties: false,
       },
-    };
+    },
+  };
 
-    const json = await callGateway({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "system", content: developer },
-        { role: "user", content: userPrompt },
-      ],
-      tools: [tool],
-      tool_choice: { type: "function", function: { name: "writeiq_result" } },
-    });
+  const messages: Array<{ role: string; content: string }> = [
+    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: developer },
+    { role: "user", content: userPrompt },
+  ];
+  if (recovery) messages.push({ role: "system", content: RECOVERY_PROMPT });
 
-    const parsed = extractToolArgs(json);
-    if (!parsed) {
+  const json = await callGateway({
+    model: "google/gemini-3-flash-preview",
+    messages,
+    tools: [tool],
+    tool_choice: { type: "function", function: { name: "writeiq_result" } },
+  });
+
+  return extractToolArgs(json);
+}
+
+export const analyzeWriting = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => AnalyzeInput.parse(input))
+  .handler(async ({ data }) => {
+    // 1. Edge cases handled deterministically before paying for a model call
+    const edge = detectEdgeCases(data.text);
+    const synthetic = buildEdgeCaseFallback(data.text, data.mode, edge);
+    if (synthetic) return synthetic;
+
+    // 2. Inject edge-case nudges into the prompt
+    if (edge.repetitive || edge.overlyComplex || edge.tooShort) {
+      const notes: string[] = [];
+      if (edge.tooShort) notes.push("Input is very short — keep suggestions minimal but concrete.");
+      if (edge.repetitive) notes.push(`Detected repetition of "${edge.topRepeatedToken}" — prioritize conciseness suggestions.`);
+      if (edge.overlyComplex) notes.push(`Detected overly long sentences (longest: ${edge.longestSentenceWords} words) — prioritize simplification suggestions.`);
+      data = { ...data, context: `${data.context ?? ""}\n[ENGINE_NOTES] ${notes.join(" ")}`.trim() };
+    }
+
+    // 3. Try → validate → retry once with recovery prompt → fallback
+    let raw = await runAnalysis(data, false);
+    let validated = ResponseSchema.safeParse(raw);
+
+    if (!validated.success) {
+      console.warn("WriteIQ JSON invalid, retrying with recovery prompt:", validated.error.issues);
+      raw = await runAnalysis(data, true);
+      validated = ResponseSchema.safeParse(raw);
+    }
+
+    if (!validated.success) {
       return {
         score: 0,
         suggestions: [],
         socratic_questions: [],
-        accessibility: { readability_score: "unknown", issues: ["Model returned invalid output"] },
+        accessibility: {
+          readability_score: "unknown",
+          issues: ["Model returned invalid output after retry. Please try again."],
+        },
       };
     }
 
-    // Enforce mode invariants
-    if (data.mode === "socratic") parsed.suggestions = [];
-    return parsed;
+    // 4. Enforce mode invariants
+    const result = validated.data;
+    if (data.mode === "socratic") {
+      result.suggestions = [];
+      if (result.socratic_questions.length === 0) {
+        result.socratic_questions = ["What single change would most strengthen this draft?"];
+      }
+    } else {
+      // Coach: keep socratic_questions minimal (≤ 1)
+      if (result.socratic_questions.length > 1) {
+        result.socratic_questions = result.socratic_questions.slice(0, 1);
+      }
+    }
+    return result;
   });
+
 
 export const extractVoice = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ExtractInput.parse(input))
