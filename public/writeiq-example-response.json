@@ -1,0 +1,33 @@
+{
+  "score": 72,
+  "suggestions": [
+    {
+      "title": "Tighten wordy opener",
+      "description": "The phrase 'In order to' adds words without meaning. Replace with 'To'.",
+      "original": "In order to improve the user experience",
+      "replacement": "To improve the user experience"
+    },
+    {
+      "title": "Remove redundancy",
+      "description": "'Very unique' is redundant — 'unique' is absolute.",
+      "original": "very unique",
+      "replacement": "unique"
+    },
+    {
+      "title": "Prefer active voice",
+      "description": "Active voice is more direct and easier to follow.",
+      "original": "the report was written by the team",
+      "replacement": "the team wrote the report"
+    }
+  ],
+  "socratic_questions": [
+    "What single change would most strengthen the opening line for your audience?"
+  ],
+  "accessibility": {
+    "readability_score": "Grade 9 — Plain English",
+    "issues": [
+      "One sentence exceeds 28 words; consider splitting.",
+      "Passive voice used in 2 of 6 sentences."
+    ]
+  }
+}

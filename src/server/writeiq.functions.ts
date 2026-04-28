@@ -374,6 +374,34 @@ export const analyzeWriting = createServerFn({ method: "POST" })
       validated = ResponseSchema.safeParse(raw);
     }
 
+    // 3b. Substring validation: each suggestion.original MUST appear in input.
+    // If any fail, retry once with an explicit correction prompt; then drop bad ones.
+    if (validated.success && data.mode === "coach" && validated.data.suggestions.length > 0) {
+      const sourceText = data.text;
+      const isValidPair = (s: { original: string; replacement: string }) =>
+        s.original.length > 0 &&
+        sourceText.includes(s.original) &&
+        s.replacement !== s.original;
+      const allMatch = validated.data.suggestions.every(isValidPair);
+      if (!allMatch) {
+        const bad = validated.data.suggestions.filter((s) => !isValidPair(s));
+        console.warn("WriteIQ suggestions failed substring check, regenerating:", bad.map((b) => b.original));
+        const correction: typeof data = {
+          ...data,
+          context: `${data.context ?? ""}\n[ENGINE_NOTES] CRITICAL: Every suggestion.original MUST be an EXACT verbatim substring of the user's input text (case and punctuation must match). Do not paraphrase the original. Replacement must differ from original. Previous attempt had ${bad.length} invalid suggestion(s).`.trim(),
+        };
+        const raw2 = await runAnalysis(correction, false);
+        const validated2 = ResponseSchema.safeParse(raw2);
+        if (validated2.success) {
+          validated = validated2;
+        }
+        // Final guard: drop any remaining invalid pairs
+        if (validated.success) {
+          validated.data.suggestions = validated.data.suggestions.filter(isValidPair);
+        }
+      }
+    }
+
     if (!validated.success) {
       return {
         score: 0,
