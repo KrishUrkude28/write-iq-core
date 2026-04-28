@@ -62,15 +62,22 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.005 90);
+  --foreground: oklch(0.18 0.02 50);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
+  --card-foreground: oklch(0.18 0.02 50);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
+  --popover-foreground: oklch(0.18 0.02 50);
+  --primary: oklch(0.55 0.18 35);
+  --primary-foreground: oklch(0.99 0.01 90);
+  --primary-glow: oklch(0.72 0.16 50);
+  --gradient-primary: linear-gradient(135deg, oklch(0.55 0.18 35), oklch(0.72 0.16 50));
+  --gradient-surface: linear-gradient(180deg, oklch(0.99 0.005 90), oklch(0.96 0.012 80));
+  --shadow-elegant: 0 20px 60px -20px oklch(0.55 0.18 35 / 0.25);
+  --shadow-soft: 0 2px 12px -4px oklch(0.18 0.02 50 / 0.08);
+  --font-display: "Fraunces", "Times New Roman", serif;
+  --font-body: "Inter", system-ui, sans-serif;
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
@@ -138,7 +145,17 @@
   }
 
   body {
-    background-color: var(--color-background);
+    background: var(--gradient-surface);
     color: var(--color-foreground);
+    font-family: var(--font-body);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    font-feature-settings: "ss01", "ss02";
+    letter-spacing: -0.02em;
   }
 }
+
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap");
