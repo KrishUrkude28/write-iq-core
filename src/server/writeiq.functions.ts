@@ -375,60 +375,82 @@ export const analyzeWriting = createServerFn({ method: "POST" })
     }
 
     // 3b. Substring validation: each suggestion.original MUST appear in input.
-    // If any fail, retry once with an explicit correction prompt; then drop bad ones.
+    // Regenerate ONLY the broken suggestions (single retry), then drop any leftovers.
     if (validated.success && data.mode === "coach" && validated.data.suggestions.length > 0) {
       const sourceText = data.text;
-      const isValidPair = (s: { original: string; replacement: string }) =>
-        s.original.length > 0 &&
-        sourceText.includes(s.original) &&
-        s.replacement !== s.original;
-      const allMatch = validated.data.suggestions.every(isValidPair);
-      if (!allMatch) {
-        const bad = validated.data.suggestions.filter((s) => !isValidPair(s));
-        console.warn("WriteIQ suggestions failed substring check, regenerating:", bad.map((b) => b.original));
+      const good = validated.data.suggestions.filter((s) => isValidSuggestion(s, sourceText));
+      const bad = validated.data.suggestions.filter((s) => !isValidSuggestion(s, sourceText));
+      if (bad.length > 0) {
+        console.warn("WriteIQ regenerating broken suggestions:", bad.map((b) => b.original));
         const correction: typeof data = {
           ...data,
-          context: `${data.context ?? ""}\n[ENGINE_NOTES] CRITICAL: Every suggestion.original MUST be an EXACT verbatim substring of the user's input text (case and punctuation must match). Do not paraphrase the original. Replacement must differ from original. Previous attempt had ${bad.length} invalid suggestion(s).`.trim(),
+          context: `${data.context ?? ""}\n[ENGINE_NOTES] CRITICAL: Every suggestion.original MUST be an EXACT verbatim substring of the user's input text (case and punctuation must match). Do not paraphrase. Replacement must differ from original. Return ${bad.length} replacement suggestion(s) for the broken originals: ${JSON.stringify(bad.map((b) => b.original))}.`.trim(),
         };
         const raw2 = await runAnalysis(correction, false);
         const validated2 = ResponseSchema.safeParse(raw2);
-        if (validated2.success) {
-          validated = validated2;
-        }
-        // Final guard: drop any remaining invalid pairs
-        if (validated.success) {
-          validated.data.suggestions = validated.data.suggestions.filter(isValidPair);
-        }
+        const replacements = validated2.success
+          ? validated2.data.suggestions.filter((s) => isValidSuggestion(s, sourceText))
+          : [];
+        validated = {
+          success: true,
+          data: { ...validated.data, suggestions: [...good, ...replacements] },
+        } as typeof validated;
       }
     }
 
     if (!validated.success) {
-      return {
-        score: 0,
-        suggestions: [],
-        socratic_questions: [],
-        accessibility: {
-          readability_score: "unknown",
-          issues: ["Model returned invalid output after retry. Please try again."],
-        },
-      };
+      return enforceModeConstraints(safeDefaultResponse(), data.mode);
     }
 
     // 4. Enforce mode invariants
-    const result = validated.data;
-    if (data.mode === "socratic") {
-      result.suggestions = [];
-      if (result.socratic_questions.length === 0) {
-        result.socratic_questions = ["What single change would most strengthen this draft?"];
-      }
-    } else {
-      // Coach: keep socratic_questions minimal (≤ 1)
-      if (result.socratic_questions.length > 1) {
-        result.socratic_questions = result.socratic_questions.slice(0, 1);
-      }
-    }
-    return result;
+    return enforceModeConstraints(validated.data, data.mode);
   });
+
+// --- Pure helpers (exported for tests) ---
+export function isValidSuggestion(
+  s: { original: string; replacement: string },
+  sourceText: string,
+): boolean {
+  return s.original.length > 0 && sourceText.includes(s.original) && s.replacement !== s.original;
+}
+
+export function safeDefaultResponse(): z.infer<typeof ResponseSchema> {
+  return {
+    score: 0,
+    suggestions: [],
+    socratic_questions: [],
+    accessibility: {
+      readability_score: "unknown",
+      issues: ["Model returned invalid output after retry. Please try again."],
+    },
+  };
+}
+
+export function enforceModeConstraints(
+  result: z.infer<typeof ResponseSchema>,
+  mode: "coach" | "socratic",
+): z.infer<typeof ResponseSchema> {
+  const out = {
+    ...result,
+    suggestions: [...result.suggestions],
+    socratic_questions: [...result.socratic_questions],
+  };
+  if (mode === "socratic") {
+    out.suggestions = [];
+    if (out.socratic_questions.length === 0) {
+      out.socratic_questions = ["What single change would most strengthen this draft?"];
+    } else if (out.socratic_questions.length > 5) {
+      out.socratic_questions = out.socratic_questions.slice(0, 5);
+    }
+  } else {
+    if (out.socratic_questions.length > 1) {
+      out.socratic_questions = out.socratic_questions.slice(0, 1);
+    }
+  }
+  return out;
+}
+
+export { ResponseSchema, detectEdgeCases, buildEdgeCaseFallback };
 
 
 export const extractVoice = createServerFn({ method: "POST" })
