@@ -17,7 +17,7 @@ import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShareShareIdRouteImport } from './routes/share.$shareId'
-import { Route as ApiRewriteRouteImport } from './routes/api.rewrite'
+import { Route as ApiRewriteRouteImport } from './routes/api/rewrite'
 
 const WorkspaceSettingsRoute = WorkspaceSettingsRouteImport.update({
   id: '/workspace-settings',
@@ -229,12 +229,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

@@ -89,7 +89,7 @@ export const GhostText = Extension.create<GhostTextOptions>({
               from,
               () => {
                 const span = document.createElement("span");
-                span.className = className;
+                span.className = className ?? "";
                 span.textContent = text;
                 return span;
               },
