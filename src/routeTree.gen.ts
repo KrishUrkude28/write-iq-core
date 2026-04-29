@@ -17,6 +17,7 @@ import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShareShareIdRouteImport } from './routes/share.$shareId'
+import { Route as ApiRewriteRouteImport } from './routes/api/rewrite'
 
 const WorkspaceSettingsRoute = WorkspaceSettingsRouteImport.update({
   id: '/workspace-settings',
@@ -58,6 +59,11 @@ const ShareShareIdRoute = ShareShareIdRouteImport.update({
   path: '/share/$shareId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRewriteRoute = ApiRewriteRouteImport.update({
+  id: '/api/rewrite',
+  path: '/api/rewrite',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/voice-studio': typeof VoiceStudioRoute
   '/workspace-settings': typeof WorkspaceSettingsRoute
+  '/api/rewrite': typeof ApiRewriteRoute
   '/share/$shareId': typeof ShareShareIdRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/voice-studio': typeof VoiceStudioRoute
   '/workspace-settings': typeof WorkspaceSettingsRoute
+  '/api/rewrite': typeof ApiRewriteRoute
   '/share/$shareId': typeof ShareShareIdRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/voice-studio': typeof VoiceStudioRoute
   '/workspace-settings': typeof WorkspaceSettingsRoute
+  '/api/rewrite': typeof ApiRewriteRoute
   '/share/$shareId': typeof ShareShareIdRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/voice-studio'
     | '/workspace-settings'
+    | '/api/rewrite'
     | '/share/$shareId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/voice-studio'
     | '/workspace-settings'
+    | '/api/rewrite'
     | '/share/$shareId'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/voice-studio'
     | '/workspace-settings'
+    | '/api/rewrite'
     | '/share/$shareId'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   VoiceStudioRoute: typeof VoiceStudioRoute
   WorkspaceSettingsRoute: typeof WorkspaceSettingsRoute
+  ApiRewriteRoute: typeof ApiRewriteRoute
   ShareShareIdRoute: typeof ShareShareIdRoute
 }
 
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareShareIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/rewrite': {
+      id: '/api/rewrite'
+      path: '/api/rewrite'
+      fullPath: '/api/rewrite'
+      preLoaderRoute: typeof ApiRewriteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   VoiceStudioRoute: VoiceStudioRoute,
   WorkspaceSettingsRoute: WorkspaceSettingsRoute,
+  ApiRewriteRoute: ApiRewriteRoute,
   ShareShareIdRoute: ShareShareIdRoute,
 }
 export const routeTree = rootRouteImport
