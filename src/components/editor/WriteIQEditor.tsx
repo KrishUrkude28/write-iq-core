@@ -36,9 +36,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { forwardRef, useImperativeHandle, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { rewriteSelection } from "@/server/writeiq.functions";
+import { predictNextWords } from "@/server/prediction.functions";
+import { GhostText } from "./extensions/GhostText";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
