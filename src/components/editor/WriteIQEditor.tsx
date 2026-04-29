@@ -106,7 +106,7 @@ export const WriteIQEditor = forwardRef<WriteIQEditorHandle, WriteIQEditorProps>
             return true;
           }
           if (event.key === "Tab") {
-            const ghostText = editor?.storage.ghostText?.text;
+            const ghostText = (editor?.storage as any).ghostText?.text as string | undefined;
             if (ghostText) {
               event.preventDefault();
               editor?.chain().focus().insertContent(ghostText).clearGhostText().run();
