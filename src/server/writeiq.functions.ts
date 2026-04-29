@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { checkCredits, trackUsage } from "./usage.functions";
 
 const VoiceSchema = z.object({
   tone: z.string().optional().default(""),
@@ -12,10 +13,12 @@ const AnalyzeInput = z.object({
   mode: z.enum(["coach", "socratic"]),
   context: z.string().max(500).optional().default(""),
   voice: VoiceSchema.optional().default({ tone: "", vocab: "", traits: "" }),
+  workspaceId: z.string().uuid().optional(),
 });
 
 const ExtractInput = z.object({
   samples: z.string().min(20).max(15000),
+  workspaceId: z.string().uuid().optional(),
 });
 
 const SYSTEM_PROMPT = `You are WriteIQ, a deterministic AI Writing Intelligence Engine.
@@ -114,7 +117,7 @@ SCORING GUIDE:
 - 0–39 → Poor clarity, major fixes needed`;
 }
 
-async function callGateway(body: Record<string, unknown>) {
+export async function callGateway(body: Record<string, unknown>) {
   const apiKey = process.env.LOVABLE_API_KEY;
   if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
 
@@ -350,10 +353,14 @@ async function runAnalysis(
 export const analyzeWriting = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => AnalyzeInput.parse(input))
   .handler(async ({ data }) => {
-    // 1. Edge cases handled deterministically before paying for a model call
     const edge = detectEdgeCases(data.text);
     const synthetic = buildEdgeCaseFallback(data.text, data.mode, edge);
     if (synthetic) return synthetic;
+
+    // 1b. Check Credits
+    if (data.workspaceId) {
+      await checkCredits(data.workspaceId, 5);
+    }
 
     // 2. Inject edge-case nudges into the prompt
     if (edge.repetitive || edge.overlyComplex || edge.tooShort) {
@@ -403,7 +410,14 @@ export const analyzeWriting = createServerFn({ method: "POST" })
     }
 
     // 4. Enforce mode invariants
-    return enforceModeConstraints(validated.data, data.mode);
+    const finalResult = enforceModeConstraints(validated.data, data.mode);
+
+    // 5. Track Usage
+    if (data.workspaceId) {
+      await trackUsage(data.workspaceId, 5, "analysis");
+    }
+
+    return finalResult;
   });
 
 // --- Pure helpers (exported for tests) ---
@@ -453,9 +467,20 @@ export function enforceModeConstraints(
 export { ResponseSchema, detectEdgeCases, buildEdgeCaseFallback };
 
 
+const RewriteInput = z.object({
+  text: z.string().min(1).max(2000),
+  intent: z.string(),
+  context: z.string().optional().default(""),
+  workspaceId: z.string().uuid().optional(),
+});
+
 export const extractVoice = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ExtractInput.parse(input))
   .handler(async ({ data }) => {
+    if (data.workspaceId) {
+      await checkCredits(data.workspaceId, 50);
+    }
+
     const tool = {
       type: "function",
       function: {
@@ -494,6 +519,11 @@ export const extractVoice = createServerFn({ method: "POST" })
     if (!parsed) {
       throw new Error("Failed to extract voice signature");
     }
+
+    if (data.workspaceId) {
+      await trackUsage(data.workspaceId, 50, "voice_extraction");
+    }
+
     return parsed as {
       tone: string;
       sentence_style: string;
@@ -501,4 +531,49 @@ export const extractVoice = createServerFn({ method: "POST" })
       patterns: string[];
       distinct_traits: string[];
     };
+  });
+
+export const rewriteSelection = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => RewriteInput.parse(input))
+  .handler(async ({ data }) => {
+    if (data.workspaceId) {
+      await checkCredits(data.workspaceId, 1);
+    }
+
+    const prompt = `Rewrite the following text with the specific intent: "${data.intent}".
+    
+    TEXT:
+    """
+    ${data.text}
+    """
+    
+    ${data.context ? `CONTEXT: ${data.context}` : ""}
+    
+    RULES:
+    - Return ONLY the rewritten text.
+    - Do NOT include quotes, explanations, or meta-talk.
+    - Preserve the core meaning but adapt the structure and tone.
+    - If the intent is "formal", use professional, precise language.
+    - If the intent is "shorten", remove fluff while keeping facts.
+    - If the intent is "expand", add detail and clarity without being wordy.
+    - If the intent is "simple", use clear, accessible language (grade 6-8 level).
+    `;
+
+    const json = await callGateway({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: "You are a professional editor. Rewrite text based on user intent. Return ONLY the rewritten content." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+    });
+
+    const content = json?.choices?.[0]?.message?.content;
+    if (!content) throw new Error("Failed to generate rewrite");
+
+    if (data.workspaceId) {
+      await trackUsage(data.workspaceId, 1, "rewrite");
+    }
+
+    return content.trim().replace(/^["']|["']$/g, ""); // strip accidental quotes
   });

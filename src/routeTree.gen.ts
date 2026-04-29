@@ -9,38 +9,188 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorkspaceSettingsRouteImport } from './routes/workspace-settings'
+import { Route as VoiceStudioRouteImport } from './routes/voice-studio'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShareShareIdRouteImport } from './routes/share.$shareId'
+import { Route as ApiRewriteRouteImport } from './routes/api.rewrite'
 
+const WorkspaceSettingsRoute = WorkspaceSettingsRouteImport.update({
+  id: '/workspace-settings',
+  path: '/workspace-settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VoiceStudioRoute = VoiceStudioRouteImport.update({
+  id: '/voice-studio',
+  path: '/voice-studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShareShareIdRoute = ShareShareIdRouteImport.update({
+  id: '/share/$shareId',
+  path: '/share/$shareId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRewriteRoute = ApiRewriteRouteImport.update({
+  id: '/api/rewrite',
+  path: '/api/rewrite',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/voice-studio': typeof VoiceStudioRoute
+  '/workspace-settings': typeof WorkspaceSettingsRoute
+  '/api/rewrite': typeof ApiRewriteRoute
+  '/share/$shareId': typeof ShareShareIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/voice-studio': typeof VoiceStudioRoute
+  '/workspace-settings': typeof WorkspaceSettingsRoute
+  '/api/rewrite': typeof ApiRewriteRoute
+  '/share/$shareId': typeof ShareShareIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/voice-studio': typeof VoiceStudioRoute
+  '/workspace-settings': typeof WorkspaceSettingsRoute
+  '/api/rewrite': typeof ApiRewriteRoute
+  '/share/$shareId': typeof ShareShareIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/history'
+    | '/login'
+    | '/signup'
+    | '/voice-studio'
+    | '/workspace-settings'
+    | '/api/rewrite'
+    | '/share/$shareId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/history'
+    | '/login'
+    | '/signup'
+    | '/voice-studio'
+    | '/workspace-settings'
+    | '/api/rewrite'
+    | '/share/$shareId'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/history'
+    | '/login'
+    | '/signup'
+    | '/voice-studio'
+    | '/workspace-settings'
+    | '/api/rewrite'
+    | '/share/$shareId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
+  HistoryRoute: typeof HistoryRoute
+  LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
+  VoiceStudioRoute: typeof VoiceStudioRoute
+  WorkspaceSettingsRoute: typeof WorkspaceSettingsRoute
+  ApiRewriteRoute: typeof ApiRewriteRoute
+  ShareShareIdRoute: typeof ShareShareIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workspace-settings': {
+      id: '/workspace-settings'
+      path: '/workspace-settings'
+      fullPath: '/workspace-settings'
+      preLoaderRoute: typeof WorkspaceSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/voice-studio': {
+      id: '/voice-studio'
+      path: '/voice-studio'
+      fullPath: '/voice-studio'
+      preLoaderRoute: typeof VoiceStudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +198,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/share/$shareId': {
+      id: '/share/$shareId'
+      path: '/share/$shareId'
+      fullPath: '/share/$shareId'
+      preLoaderRoute: typeof ShareShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/rewrite': {
+      id: '/api/rewrite'
+      path: '/api/rewrite'
+      fullPath: '/api/rewrite'
+      preLoaderRoute: typeof ApiRewriteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
+  HistoryRoute: HistoryRoute,
+  LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
+  VoiceStudioRoute: VoiceStudioRoute,
+  WorkspaceSettingsRoute: WorkspaceSettingsRoute,
+  ApiRewriteRoute: ApiRewriteRoute,
+  ShareShareIdRoute: ShareShareIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

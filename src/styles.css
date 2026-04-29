@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -158,4 +159,87 @@
   }
 }
 
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap");
+/* ─── TipTap / Prose editor content styles ─────────────────────────────── */
+
+.prose {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--color-foreground);
+}
+
+.prose p {
+  margin-bottom: 0.875em;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose strong, .prose b {
+  font-weight: 600;
+}
+
+.prose em, .prose i {
+  font-style: italic;
+}
+
+.prose u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose s, .prose del {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+}
+
+.prose h1 { font-size: 1.6em; }
+.prose h2 { font-size: 1.35em; }
+.prose h3 { font-size: 1.15em; }
+
+.prose ul, .prose ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.875em;
+}
+
+.prose ul { list-style-type: disc; }
+.prose ol { list-style-type: decimal; }
+
+.prose li { margin-bottom: 0.3em; }
+
+.prose blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 1em;
+  margin-left: 0;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  background: var(--color-secondary);
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+}
+
+/* TipTap placeholder text */
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--color-muted-foreground);
+  pointer-events: none;
+  height: 0;
+  opacity: 0.5;
+}
+

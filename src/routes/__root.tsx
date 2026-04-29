@@ -29,14 +29,14 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "WriteIQ — AI Writing Intelligence Engine" },
+      { name: "description", content: "Analyze and improve your writing with precision. Coach mode for direct fixes, Socratic mode for guided thinking, voice cloning for personal style." },
+      { name: "author", content: "WriteIQ" },
+      { property: "og:title", content: "WriteIQ — AI Writing Intelligence Engine" },
+      { property: "og:description", content: "Precision writing analysis with adaptive voice matching." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "WriteIQ — AI Writing Intelligence Engine" },
     ],
     links: [
       {
@@ -64,6 +64,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { WorkspaceProvider } from "@/hooks/use-workspace";
+
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <WorkspaceProvider>
+      <Outlet />
+    </WorkspaceProvider>
+  );
 }
