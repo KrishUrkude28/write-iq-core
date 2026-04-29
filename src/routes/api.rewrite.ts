@@ -1,3 +1,4 @@
+import { createFileRoute } from "@tanstack/react-router"
 import { createAPIFileRoute } from "@tanstack/react-start/api";
 import { z } from "zod";
 import { checkCredits, trackUsage } from "@/server/usage.functions";
