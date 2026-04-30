@@ -351,9 +351,22 @@ async function runAnalysis(
 }
 
 export const analyzeWriting = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => AnalyzeInput.parse(input))
+  .inputValidator((input: unknown) => {
+    const parsed = AnalyzeInput.safeParse(input);
+    if (!parsed.success) {
+      console.error("[analyzeWriting] invalid input", parsed.error.issues);
+      throw new Error(
+        `Invalid analysis input: ${parsed.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`,
+      );
+    }
+    return parsed.data;
+  })
   .handler(async ({ data }) => {
-    const edge = detectEdgeCases(data.text);
+    try {
+      if (!data.workspaceId) {
+        console.warn("[analyzeWriting] no workspaceId — running without credit gating");
+      }
+      const edge = detectEdgeCases(data.text);
     const synthetic = buildEdgeCaseFallback(data.text, data.mode, edge);
     if (synthetic) return synthetic;
 
