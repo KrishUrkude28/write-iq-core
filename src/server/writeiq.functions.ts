@@ -13,12 +13,12 @@ const AnalyzeInput = z.object({
   mode: z.enum(["coach", "socratic"]),
   context: z.string().max(500).optional().default(""),
   voice: VoiceSchema.optional().default({ tone: "", vocab: "", traits: "" }),
-  workspaceId: z.string().uuid().optional(),
+  workspaceId: z.string().uuid().nullable().optional(),
 });
 
 const ExtractInput = z.object({
   samples: z.string().min(20).max(15000),
-  workspaceId: z.string().uuid().optional(),
+  workspaceId: z.string().uuid().nullable().optional(),
 });
 
 const SYSTEM_PROMPT = `You are WriteIQ, a deterministic AI Writing Intelligence Engine.
@@ -471,7 +471,7 @@ const RewriteInput = z.object({
   text: z.string().min(1).max(2000),
   intent: z.string(),
   context: z.string().optional().default(""),
-  workspaceId: z.string().uuid().optional(),
+  workspaceId: z.string().uuid().nullable().optional(),
 });
 
 export const extractVoice = createServerFn({ method: "POST" })
