@@ -1,7 +1,6 @@
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
-import UnderlineExt from "@tiptap/extension-underline";
 import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
@@ -87,7 +86,6 @@ export const WriteIQEditor = forwardRef<WriteIQEditorHandle, WriteIQEditorProps>
     const editor = useEditor({
       extensions: [
         StarterKit,
-        UnderlineExt,
         Typography,
         Placeholder.configure({ placeholder }),
         CharacterCount,
