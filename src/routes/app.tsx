@@ -38,7 +38,7 @@ import {
   Download,
 } from "lucide-react";
 
-export const Route = createFileRoute("/")(({
+export const Route = createFileRoute("/app")(({
   head: () => ({
     meta: [
       { title: "WriteIQ — AI Writing Intelligence Engine" },
