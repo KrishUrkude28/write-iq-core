@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analyses: {
+        Row: {
+          context: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          input_text: string
+          is_public: boolean
+          mode: string
+          result: Json
+          score: number
+          share_id: string
+          share_password: string | null
+          updated_at: string
+          user_id: string | null
+          user_session: string
+          workspace_id: string | null
+        }
+        Insert: {
+          context?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          input_text: string
+          is_public?: boolean
+          mode: string
+          result: Json
+          score?: number
+          share_id?: string
+          share_password?: string | null
+          updated_at?: string
+          user_id?: string | null
+          user_session: string
+          workspace_id?: string | null
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          input_text?: string
+          is_public?: boolean
+          mode?: string
+          result?: Json
+          score?: number
+          share_id?: string
+          share_password?: string | null
+          updated_at?: string
+          user_id?: string | null
+          user_session?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      voice_signatures: {
+        Row: {
+          created_at: string
+          id: string
+          is_brand_voice: boolean
+          name: string
+          sample_preview: string
+          signature: Json
+          updated_at: string
+          user_id: string | null
+          user_session: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_brand_voice?: boolean
+          name?: string
+          sample_preview?: string
+          signature: Json
+          updated_at?: string
+          user_id?: string | null
+          user_session: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_brand_voice?: boolean
+          name?: string
+          sample_preview?: string
+          signature?: Json
+          updated_at?: string
+          user_id?: string | null
+          user_session?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
