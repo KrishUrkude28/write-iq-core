@@ -431,6 +431,26 @@ export const analyzeWriting = createServerFn({ method: "POST" })
     }
 
     return finalResult;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      console.error("[analyzeWriting] failed", {
+        workspaceId: data.workspaceId ?? null,
+        mode: data.mode,
+        textLength: data.text?.length ?? 0,
+        error: message,
+      });
+      // Return a safe default instead of crashing the UI
+      return enforceModeConstraints(
+        {
+          ...safeDefaultResponse(),
+          accessibility: {
+            readability_score: "unknown",
+            issues: [`Analysis failed: ${message}`],
+          },
+        },
+        data.mode,
+      );
+    }
   });
 
 // --- Pure helpers (exported for tests) ---
