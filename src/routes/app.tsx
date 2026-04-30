@@ -55,7 +55,42 @@ export const Route = createFileRoute("/app")(({
     ],
   }),
   component: Index,
+  errorComponent: AppErrorComponent,
 } as any));
+
+function AppErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  const message = error?.message ?? "Something went wrong.";
+  const isWorkspaceIssue = /workspaceId|workspace/i.test(message);
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center space-y-4">
+        <div className="text-5xl">⚠️</div>
+        <h1 className="text-2xl font-display font-semibold">
+          {isWorkspaceIssue ? "Workspace not ready" : "Something went wrong"}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {isWorkspaceIssue
+            ? "Your workspace is still loading or hasn't been selected. Pick a workspace and try again."
+            : message}
+        </p>
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={reset}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Try again
+          </button>
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent"
+          >
+            Go home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type Suggestion = {
   title: string;
