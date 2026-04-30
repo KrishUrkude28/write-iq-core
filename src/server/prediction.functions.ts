@@ -5,7 +5,7 @@ import { checkCredits, trackUsage } from "./usage.functions";
 
 const PredictionInput = z.object({
   contextText: z.string().min(1).max(2000),
-  workspaceId: z.string().uuid().optional(),
+  workspaceId: z.string().uuid().nullable().optional(),
   voice: z
     .object({
       tone: z.string().optional(),
